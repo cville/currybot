@@ -16,7 +16,7 @@ myConfig apiToken = SlackConfig
          }
 
 echoBot :: SlackBot ()
-echoBot (Message cid _ msg _ (Just (SChannelTopic _)) _) = sendMessage cid ("New channel topic: "++msg)
+echoBot (Message cid _ msg _ (Just (SChannelTopic _)) _) = sendMessage cid msg
 echoBot _ = return ()
 
 main :: IO ()
