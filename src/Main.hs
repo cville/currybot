@@ -9,6 +9,7 @@ import Data.Maybe (fromMaybe)
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
 #endif
+import qualified Data.Text as T
 
 myConfig :: String -> SlackConfig
 myConfig apiToken = SlackConfig
@@ -17,6 +18,7 @@ myConfig apiToken = SlackConfig
 
 echoBot :: SlackBot ()
 echoBot (Message cid _ msg _ (Just (SChannelTopic _)) _) = sendMessage cid msg
+echoBot (Message cid _ msg _ Nothing _) = sendMessage cid (T.append (T.pack "Echo ") msg)
 echoBot _ = return ()
 
 main :: IO ()
