@@ -1,0 +1,9 @@
+
+The project is managed by the stack toolchain.
+
+Run:
+
+  stack build
+
+
+This installs dependencies and builds the project.

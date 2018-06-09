@@ -1,0 +1,6 @@
+
+ 
+Execute this command with the appropriate token substituted:
+ 
+ 
+   SLACK_API_TOKEN="...token..." stack exec currybot
