@@ -20,3 +20,9 @@ executable currybot
   build-depends:       base >= 4.7 && < 5
                      , slack-api ==0.12
                      , text ==1.2.2.1
+                     , wreq
+                     , lens
+                     , lens-aeson
+                     , aeson
+                     , containers 
+                     , bytestring
