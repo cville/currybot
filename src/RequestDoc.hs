@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
+-- Demonstrate how to make a request to Hoogle for documentation and parse the results.
+
 -- # to test this
 -- #   $ stack build && stack ghci
 -- #   ghci> :l src/RequestDoc.hs
@@ -20,6 +22,11 @@ import GHC.Generics
 import qualified Data.ByteString.Lazy.Char8 as C
 -- Support for text strings
 import Data.Text
+
+-- Good documents for background reading:
+-- wreq: http://www.serpentine.com/wreq/tutorial.html
+-- aeson: https://artyom.me/aeson
+
 
 --  URL to Hoggle API  (Sample call: http://www.haskell.org/hoogle/?mode=json&hoogle=id&count=2)
 hoogleApi = "http://www.haskell.org/hoogle"
