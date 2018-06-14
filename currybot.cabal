@@ -26,3 +26,4 @@ executable currybot
                      , aeson
                      , containers 
                      , bytestring
+                     , mtl

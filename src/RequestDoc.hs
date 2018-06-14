@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
+module RequestDoc where
+
 -- Demonstrate how to make a request to Hoogle for documentation and parse the results.
 
 -- # to test this

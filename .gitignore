@@ -3,3 +3,5 @@ token
 .stack-work/
 *~
 *.swp
+slack.key
+.DS_Store
