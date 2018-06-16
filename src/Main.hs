@@ -2,70 +2,56 @@
 
 module Main where
 
+-- Slack support
 import Web.Slack
 import Web.Slack.Message
 import Web.Slack.WebAPI
-import Control.Monad.Except
+-- grab environment string
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative
-#endif
+-- alternate string type
 import qualified Data.Text as T
 import Data.Text (Text)
-import Control.Concurrent
 
-import RequestDoc
+-- Ours: methods to query Hoogle for documentation about symbols
+import QueryHoogle
+-- Ours: additional methods to interact with Slack
+import SlackExtensions
 
 
-myConfig :: String -> SlackConfig
-myConfig apiToken = SlackConfig
-         { _slackApiToken = apiToken -- Specify your API token here
-         }
+-- Get the configuration from the token
+getConfig :: String -> SlackConfig
+getConfig apiToken = SlackConfig { _slackApiToken = apiToken } 
 
+-- Start things
+main :: IO ()
+main = do
+  -- fetch the token from the environment 
+  apiToken <- fromMaybe (error "SLACK_API_TOKEN not set") <$> lookupEnv "SLACK_API_TOKEN"
+  -- get the configuration
+  let config = getConfig apiToken in
+    -- execute the event runner
+    runBot config (echoBot config) ()
+
+-- Listen to and respond to Slack events
 echoBot :: SlackConfig -> SlackBot ()
+--    Event: topic changed
 echoBot config (Message cid _ msg _ (Just (SChannelTopic _)) _) = sendMessage cid msg
+--    Event: normal message
 echoBot config (Message cid _ msg _ Nothing _) = case msg of 
-    "test" -> sendRichMessageS_ config cid (fmtHoogleItem hi) []
+    -- respond to a "curry test" request
+    "curry test" -> sendRichMessageS_ config cid (fmtHoogleItem hi) []
     otherwise -> sendMessage cid $ T.append "Echo " msg
 
     where hi = HoogleItem "http://hackage.haskell.org/packages/archive/base/latest/doc/html/Prelude.htmlv:id" "id :: a-&gt;a" (Just "Identity function")
+--    All other events
 echoBot config _ = return ()
 
 
-main :: IO ()
-main = do
-  apiToken <- fromMaybe (error "SLACK_API_TOKEN not set")
-               <$> lookupEnv "SLACK_API_TOKEN"
-  let config = myConfig apiToken in
-    runBot config (echoBot config) ()
-
-
--- Send a rich message using the web API
--- 
---  * newer versions of Web.Slack support this method already
---  * you can call this without calling runBot!
---
-sendRichMessage :: SlackConfig -> ChannelId -> T.Text -> [Attachment] -> IO (Either T.Text ())
-sendRichMessage config channel message attachments =
-  runExceptT $ chat_postMessage config channel message attachments
-
--- Like sendRichMessage but discard any result
-sendRichMessage_ :: SlackConfig -> ChannelId -> T.Text -> [Attachment] -> IO ()
-sendRichMessage_ config channel message attachments = do
-  res <- sendRichMessage config channel message attachments
-  return ()
-
-
--- Like sendRichMessage but discard any result and use Slack return type.
-sendRichMessageS_ :: SlackConfig -> ChannelId -> T.Text -> [Attachment] -> Slack s ()
-sendRichMessageS_ config channel message attachments = do
-  liftIO $ sendRichMessage_ config channel message attachments
-  
-  
-
+   
 -- Format a HoogleItem as rich text
 --
--- You should pass this on to sendRichMessage.
+-- You should pass this on to sendRichMessage, as sendMessage doesn't support the extra formatting.
+--
 fmtHoogleItem :: HoogleItem -> Text
 fmtHoogleItem (HoogleItem location self docs) = T.pack $ concat [ "*Result*", "\n<", location, "|", self, ">\n _",(maybe "" id docs), "_" ]

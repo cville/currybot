@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
-module RequestDoc where
+module QueryHoogle where
 
 -- Demonstrate how to make a request to Hoogle for documentation and parse the results.
 
 -- # to test this
 -- #   $ stack build && stack ghci
--- #   ghci> :l src/RequestDoc.hs
+-- #   ghci> :l src/QueryHoogle.hs
 -- #   ghci> :set -XOverloadedStrings
 -- #   ghci> test "id"
 
@@ -30,7 +30,7 @@ import Data.Text
 -- aeson: https://artyom.me/aeson
 
 
---  URL to Hoggle API  (Sample call: http://www.haskell.org/hoogle/?mode=json&hoogle=id&count=2)
+--  URL to Hoogle API  (Sample call: http://www.haskell.org/hoogle/?mode=json&hoogle=id&count=2)
 hoogleApi = "http://www.haskell.org/hoogle"
 
 -- Given a string referring to a function/package/etc., query Hoogle and return the result.
