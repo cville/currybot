@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE CPP, OverloadedStrings, DeriveGeneric, ViewPatterns #-}
 
 module Main where
 
@@ -12,6 +12,7 @@ import Data.Maybe (fromMaybe)
 -- alternate string type
 import qualified Data.Text as T
 import Data.Text (Text)
+import Control.Monad.IO.Class
 
 -- Ours: methods to query Hoogle for documentation about symbols
 import QueryHoogle
@@ -37,13 +38,39 @@ main = do
 echoBot :: SlackConfig -> SlackBot ()
 --    Event: topic changed
 echoBot config (Message cid _ msg _ (Just (SChannelTopic _)) _) = sendMessage cid msg
---    Event: normal message
-echoBot config (Message cid _ msg _ Nothing _) = case msg of 
-    -- respond to a "curry test" request
-    "curry test" -> sendRichMessageS_ config cid (fmtHoogleItem hi) []
-    otherwise -> sendMessage cid $ T.append "Echo " msg
+--    Event: normal message of format "echo <rem>"
+echoBot config (Message cid _ (T.stripPrefix "echo " -> Just rem) _ Nothing _) = sendMessage cid $ T.append "Echo " rem
+--    Event: normal message of format "hoogle <rem>"
+echoBot config (Message cid _ (T.stripPrefix "hoogle " -> Just rem) _ Nothing _) = do queryAndSend rem
+    where
+        -- request data from Hoogle and send result out
+        queryAndSend :: Text -> Slack s ()
+        queryAndSend msgText = do
+            (HoogleResult items) <- getResults msgText
+            mapM_ sendItem items
+    
+        -- get result
+        getResults :: Text -> Slack s (HoogleResult)
+        getResults queryText = liftIO $ queryAndResolve queryText
+    
+        -- Query Hoogle and return some kind of HoogleResult even on error.
+        -- When that happens, we wrap the error message.
+        --
+        -- It would be better to propagate an Either (...) for handling later.
+        --
+        queryAndResolve :: Text -> IO HoogleResult
+        queryAndResolve xs = do
+          res <- queryHoogle xs
+          let resolved = either (const errHoogleResult) id res
+              in return resolved
+        
+        errHoogleResult = HoogleResult [ HoogleItem "#" "Error!" Nothing ]
 
-    where hi = HoogleItem "http://hackage.haskell.org/packages/archive/base/latest/doc/html/Prelude.htmlv:id" "id :: a-&gt;a" (Just "Identity function")
+        -- send result item
+        sendItem :: HoogleItem -> Slack s ()
+        sendItem x =  sendRichMessageS_ config cid (fmtHoogleItem x) []
+                    
+     
 --    All other events
 echoBot config _ = return ()
 
@@ -54,4 +81,10 @@ echoBot config _ = return ()
 -- You should pass this on to sendRichMessage, as sendMessage doesn't support the extra formatting.
 --
 fmtHoogleItem :: HoogleItem -> Text
-fmtHoogleItem (HoogleItem location self docs) = T.pack $ concat [ "*Result*", "\n<", location, "|", self, ">\n _",(maybe "" id docs), "_" ]
+fmtHoogleItem (HoogleItem location self docs) = T.pack $ concat pieces
+  where 
+    pieces = [ "*Result*", "\n<", location', "|", self', ">\n _", docs', "_" ]
+    location' = escapeMessageText location
+    self' = escapeMessageText self
+    docs' = maybe "" escapeMessageText docs
+  

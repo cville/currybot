@@ -27,3 +27,4 @@ executable currybot
                      , containers 
                      , bytestring
                      , mtl
+                     , transformers
