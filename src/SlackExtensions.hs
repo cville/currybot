@@ -36,12 +36,23 @@ sendRichMessageS_ config channel message attachments = do
 
 
 -- Escape characters that are control characters in rich messages to Slack
---escapeControlCharacters :: String -> String
---escapeControlCharacters str = fold
+-- Use this in calls to sendRichMessage (but not for calls to sendMessage)
+escapeMessageText :: String -> String
+escapeMessageText str = foldr replace' str escapes
+    where 
+      replace' (orig, repl) str = replace orig repl str
+      escapes = [ ('<', "&lt;"), ('>', "&gt;"), ('&', "&amp;") ]
+            -- foldr :: Foldable t => (a -> b -> b) -> b -> t a -> b
 
--- not probably the best implementation
--- see http://hackage.haskell.org/package/MissingH-1.4.0.1/docs/Data-List-Utils.html for another approach
+
+-- Replace instances of characters in a string with a string.
+--   e.g., replace 'w' "world" "hi w" ==== "hi world"
+-- 
+-- The MissingH library has a different (and better?) implementation.
+--
 replace :: Eq a => a -> [a] -> [a] -> [a]
 replace orig repl [] = []
 replace orig repl (x:xs) = (if x == orig then repl else [x]) ++ (replace orig repl xs)
 
+-- This should be equal to "Up &amp; Down &amp; &lt;left &amp; &gt;right"
+sampleEscape = escapeMessageText "Up & Down & <left & >right"
